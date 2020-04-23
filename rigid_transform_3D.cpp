@@ -33,7 +33,7 @@ auto rigid_transform_3D(const PointSet& A, const PointSet& B)
 	auto Vt = svd.matrixV();
 	Eigen::Matrix3f R = Vt.transpose() * U.transpose();
 
-	//	# special reflection case
+	// special reflection case
 	if (R.determinant() < 0.0f)
 	{
 		Vt.row(2) *= -1.0f;
