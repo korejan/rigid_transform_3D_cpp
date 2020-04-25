@@ -1,3 +1,5 @@
+#include <cstdlib>
+#include <ctime>
 #include <iostream>
 #include <Eigen/Geometry>
 
@@ -6,7 +8,7 @@
 // Based on article: http://nghiaho.com/?page_id=671
 //
 using PointSet = Eigen::Matrix<float, 3, Eigen::Dynamic>;
-auto rigid_transform_3D(const PointSet& A, const PointSet& B)
+auto rigid_transform_3D(const PointSet& A, const PointSet& B) -> std::tuple<Eigen::Matrix3f, Eigen::Vector3f>
 {
 	static_assert(PointSet::RowsAtCompileTime == 3);
 	assert(A.cols() == B.cols());
@@ -28,9 +30,9 @@ auto rigid_transform_3D(const PointSet& A, const PointSet& B)
 	//
 
 	// find rotation
-	auto svd = H.jacobiSvd(Eigen::DecompositionOptions::ComputeFullU | Eigen::DecompositionOptions::ComputeFullV);
-	const auto& U = svd.matrixU();
-	auto Vt = svd.matrixV();
+	Eigen::JacobiSVD<Eigen::Matrix3Xf> svd = H.jacobiSvd(Eigen::DecompositionOptions::ComputeFullU | Eigen::DecompositionOptions::ComputeFullV);
+	const Eigen::Matrix3f& U = svd.matrixU();
+	Eigen::MatrixXf Vt = svd.matrixV();
 	Eigen::Matrix3f R = Vt.transpose() * U.transpose();
 
 	// special reflection case
@@ -40,23 +42,24 @@ auto rigid_transform_3D(const PointSet& A, const PointSet& B)
 		R = Vt.transpose() * U.transpose();
 	}
 
-	auto t = -R * centroid_A + centroid_B;
+	const Eigen::Vector3f t = -R * centroid_A + centroid_B;
 
-	return std::make_tuple(R, Eigen::Vector3f(t));
+	return std::make_tuple(R, t);
 }
 
 int main()
 {
 	// Test with random data
+	std::srand(static_cast<unsigned int>(std::time(0)));
 
 	// Random rotationand translation
 	Eigen::Matrix3f R = Eigen::Matrix3f::Random();
 	Eigen::Vector3f t = Eigen::Vector3f::Random();
 
 	// make R a proper rotation matrix, force orthonormal
-	auto svd = R.jacobiSvd(Eigen::DecompositionOptions::ComputeFullU | Eigen::DecompositionOptions::ComputeFullV);
-	const auto& U = svd.matrixU();
-	auto Vt = svd.matrixV();
+	Eigen::JacobiSVD<Eigen::Matrix3f> svd = R.jacobiSvd(Eigen::DecompositionOptions::ComputeFullU | Eigen::DecompositionOptions::ComputeFullV);
+	const Eigen::Matrix3f U = svd.matrixU();
+	Eigen::Matrix3f Vt = svd.matrixV();
 	R = U * Vt;
 	
 	// remove reflection
@@ -73,7 +76,7 @@ int main()
 	PointSet B = (R * A).colwise() + t;
 
 	// Recover R and t
-	auto [ret_R, ret_t] = rigid_transform_3D(A, B);
+	const auto [ret_R, ret_t] = rigid_transform_3D(A, B);
 
 	// Compare the recovered R and t with the original
 	PointSet B2 = (ret_R * A).colwise() + ret_t;
@@ -81,7 +84,7 @@ int main()
 	// Find the root mean squared error
 	PointSet err = B2 - B;
 	err = err.cwiseProduct(err);
-	float rmse = std::sqrt(err.sum() / static_cast<float>(N));
+	const float rmse = std::sqrt(err.sum() / static_cast<float>(N));
 
 	std::cout << "Points A\n" << A << '\n';
 
