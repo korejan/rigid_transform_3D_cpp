@@ -32,14 +32,14 @@ auto rigid_transform_3D(const PointSet& A, const PointSet& B) -> std::tuple<Eige
 	// find rotation
 	Eigen::JacobiSVD<Eigen::Matrix3Xf> svd = H.jacobiSvd(Eigen::DecompositionOptions::ComputeFullU | Eigen::DecompositionOptions::ComputeFullV);
 	const Eigen::Matrix3f& U = svd.matrixU();
-	Eigen::MatrixXf Vt = svd.matrixV();
-	Eigen::Matrix3f R = Vt.transpose() * U.transpose();
+	Eigen::MatrixXf V = svd.matrixV();
+	Eigen::Matrix3f R = V * U.transpose();
 
 	// special reflection case
 	if (R.determinant() < 0.0f)
 	{
-		Vt.row(2) *= -1.0f;
-		R = Vt.transpose() * U.transpose();
+		V.col(2) *= -1.0f;
+		R = V * U.transpose();
 	}
 
 	const Eigen::Vector3f t = -R * centroid_A + centroid_B;
@@ -65,7 +65,7 @@ int main()
 	// remove reflection
 	if (R.determinant() < 0.0f)
 	{
-		Vt.row(2) *= -1.0f;
+		Vt.col(2) *= -1.0f;
 		R = U * Vt;
 	}
 
