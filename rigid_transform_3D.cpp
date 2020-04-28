@@ -1,5 +1,6 @@
 #include <cstdlib>
 #include <ctime>
+#include <tuple>
 #include <iostream>
 #include <Eigen/Geometry>
 
@@ -52,7 +53,7 @@ int main()
 	// Test with random data
 	std::srand(static_cast<unsigned int>(std::time(0)));
 
-	// Random rotationand translation
+	// Random rotation and translation
 	Eigen::Matrix3f R = Eigen::Matrix3f::Random();
 	Eigen::Vector3f t = Eigen::Vector3f::Random();
 
